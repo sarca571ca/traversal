@@ -1,0 +1,89 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: linux
+            binary: traversal
+            out: traversal-linux
+
+          - os: windows-latest
+            name: windows
+            binary: traversal.exe
+            out: traversal-windows.exe
+
+          - os: macos-latest
+            name: macos
+            binary: traversal
+            out: traversal-macos
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      # Linux: webkit2gtk — try 4.1 first (Ubuntu 22.04+), fall back to 4.0
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc libgtk-3-dev \
+            libwebkit2gtk-4.1-dev 2>/dev/null || \
+          sudo apt-get install -y gcc libgtk-3-dev \
+            libwebkit2gtk-4.0-dev
+
+      # Windows: go-sqlite3 needs a C compiler; MinGW via msys2 is the
+      # most reliable option on the GitHub-hosted Windows runner.
+      - name: Setup MinGW (Windows)
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: false
+          install: mingw-w64-x86_64-gcc
+
+      - name: Add MinGW to PATH (Windows)
+        if: runner.os == 'Windows'
+        run: echo "C:/msys64/mingw64/bin" >> $env:GITHUB_PATH
+
+      - name: Build
+        run: wails build
+
+      - name: Stage artifact
+        shell: bash
+        run: |
+          mkdir -p dist
+          mv build/bin/${{ matrix.binary }} dist/${{ matrix.out }}
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: dist/${{ matrix.out }}

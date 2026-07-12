@@ -21,6 +21,9 @@ var scopes = []string{
 	"esi-clones.read_implants.v1",
 }
 
+// Load returns the app config. A .env file is optional and only needed
+// when a developer wants to override the bundled EVE application credentials.
+// Release binaries work without one.
 func Load() Config {
 	_ = godotenv.Load()
 

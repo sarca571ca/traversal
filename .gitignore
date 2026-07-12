@@ -1,3 +1,31 @@
+# Build output
+build/bin/
+build/darwin/
+build/windows/
+
+# Wails dev binary (placed in repo root during wails dev)
+traversal
+traversal-dev-*
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/package.json.md5
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Environment / secrets
 .env
-build/
-traversal.db
+
+# Editor / tool state
+.claude/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
