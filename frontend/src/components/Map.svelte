@@ -301,7 +301,7 @@
       const b = posMap.get(conn.systemB)
       if (a && b) {
         const urgent = conn.expiresAt > 0 && conn.expiresAt > now && (conn.expiresAt - now) < 4 * 3600
-        const types = [conn.whTypeA, conn.whTypeB].filter(Boolean)
+        const types = [conn.sigIdA, conn.sigIdB].filter(Boolean)
         const label = types.length === 2 ? types.join('/') : types[0] ?? ''
         acc.push({
           id: conn.id,
