@@ -33,11 +33,34 @@ type MapConnection struct {
 	MassStatus string `json:"massStatus"`
 	EOL        bool   `json:"eol"`
 	ExpiresAt  int64  `json:"expiresAt"`
+	Conduit    bool   `json:"conduit"` // permanent Pochven highway edge
+}
+
+// WHStub is a wormhole whose far side isn't known yet (e.g. a
+// "W-CDJ-[Sleepers]" bookmark). It's drawn as a dangling edge off its system.
+type WHStub struct {
+	ID        int64  `json:"id"`
+	SystemID  int32  `json:"systemId"`
+	SigID     string `json:"sigId"`
+	Dest      string `json:"dest"` // space class, e.g. "J-space", or free text
+	Note      string `json:"note"` // e.g. "Sleepers"
+	ExpiresAt int64  `json:"expiresAt"`
+	// Placed is true once the user has dragged the stub; Dx/Dy is then its
+	// end point relative to the system. Otherwise the map lays it out.
+	Placed bool    `json:"placed"`
+	Dx     float64 `json:"dx"`
+	Dy     float64 `json:"dy"`
+}
+
+// SetStubPosition saves a dragged WH stub's offset from its system.
+func (a *App) SetStubPosition(id int64, dx, dy float64) error {
+	return a.store.SetStubOffset(id, dx, dy)
 }
 
 type MapData struct {
 	Systems     []SystemNode    `json:"systems"`
 	Connections []MapConnection `json:"connections"`
+	Stubs       []WHStub        `json:"stubs"`
 }
 
 func (a *App) GetMapData() MapData {
@@ -76,6 +99,7 @@ func (a *App) GetMapData() MapData {
 		}
 	}
 
+	conduits := a.conduitPairs()
 	mapConns := make([]MapConnection, len(conns))
 	for i, c := range conns {
 		mapConns[i] = MapConnection{
@@ -90,10 +114,11 @@ func (a *App) GetMapData() MapData {
 			MassStatus: c.MassStatus,
 			EOL:        c.EOL,
 			ExpiresAt:  c.ExpiresAt,
+			Conduit:    conduits[[2]int32{c.SystemA, c.SystemB}],
 		}
 	}
 
-	return MapData{Systems: nodes, Connections: mapConns}
+	return MapData{Systems: nodes, Connections: mapConns, Stubs: a.whStubs()}
 }
 
 func (a *App) UpdateSystemPosition(id int32, x, y float64) error {
@@ -147,9 +172,22 @@ func (a *App) GetHomeSystemIDs() []int32 {
 }
 
 // GetPochvenSystemIDs returns IDs of all seeded Pochven systems (for purple coloring).
+// The stored list is merged with a name lookup of the layout, because older
+// seeds wrongly left Kino out.
 func (a *App) GetPochvenSystemIDs() []int32 {
 	v, _ := a.store.GetSetting("pochven_system_ids")
-	return parseIDList(v)
+	ids := parseIDList(v)
+	seen := make(map[int32]bool, len(ids))
+	for _, id := range ids {
+		seen[id] = true
+	}
+	for _, node := range pochvenLayout {
+		if sys, _ := a.store.GetSystemByName(node.name); sys != nil && !seen[sys.ID] {
+			seen[sys.ID] = true
+			ids = append(ids, sys.ID)
+		}
+	}
+	return ids
 }
 
 func parseIDList(s string) []int32 {
@@ -255,6 +293,13 @@ func (a *App) pollLocations() {
 					log.Println("delete expired connections:", err)
 				}
 				runtime.EventsEmit(a.ctx, "wh:expired", notices)
+				changed = true
+			}
+
+			// Unknown-destination sigs from bookmarks expire with the bookmark.
+			if n, err := a.store.DeleteExpiredSignatures(); err != nil {
+				log.Println("delete expired signatures:", err)
+			} else if n > 0 {
 				changed = true
 			}
 

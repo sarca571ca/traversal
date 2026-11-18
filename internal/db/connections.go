@@ -167,3 +167,32 @@ func scanConnection(s scanner) (*Connection, error) {
 	c.CreatedAt = time.Unix(createdAt, 0)
 	return &c, nil
 }
+
+// GetConnectionBetween returns the connection joining two systems (either order), or nil.
+func (db *DB) GetConnectionBetween(id1, id2 int32) (*Connection, error) {
+	a, b := id1, id2
+	if a > b {
+		a, b = b, a
+	}
+	row := db.sql.QueryRow(`
+		SELECT id, system_a, system_b,
+		       COALESCE(wh_type_a,''), COALESCE(wh_type_b,''),
+		       COALESCE(sig_id_a,''),  COALESCE(sig_id_b,''),
+		       COALESCE(ship_size,''), COALESCE(mass_status,'stable'),
+		       eol, COALESCE(expires_at,0), created_at
+		FROM connections WHERE system_a = ? AND system_b = ?
+	`, a, b)
+	return scanConnection(row)
+}
+
+// SetConnectionSigs updates only the sig IDs and, when expiresAt > 0, the expiry.
+// Everything else (WH types, mass, ship size, EOL) is left untouched.
+func (db *DB) SetConnectionSigs(id int64, sigIDA, sigIDB string, expiresAt int64) error {
+	if expiresAt > 0 {
+		_, err := db.sql.Exec(`UPDATE connections SET sig_id_a=?, sig_id_b=?, expires_at=? WHERE id=?`,
+			sigIDA, sigIDB, expiresAt, id)
+		return err
+	}
+	_, err := db.sql.Exec(`UPDATE connections SET sig_id_a=?, sig_id_b=? WHERE id=?`, sigIDA, sigIDB, id)
+	return err
+}

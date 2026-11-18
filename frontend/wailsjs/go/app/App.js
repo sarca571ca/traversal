@@ -54,6 +54,10 @@ export function GetViewport() {
   return window['go']['app']['App']['GetViewport']();
 }
 
+export function ImportBookmarks(arg1) {
+  return window['go']['app']['App']['ImportBookmarks'](arg1);
+}
+
 export function PlanRoute(arg1, arg2, arg3, arg4) {
   return window['go']['app']['App']['PlanRoute'](arg1, arg2, arg3, arg4);
 }
@@ -72,6 +76,10 @@ export function SaveViewport(arg1, arg2, arg3) {
 
 export function SeedPochven() {
   return window['go']['app']['App']['SeedPochven']();
+}
+
+export function SetStubPosition(arg1, arg2, arg3) {
+  return window['go']['app']['App']['SetStubPosition'](arg1, arg2, arg3);
 }
 
 export function UpdateConnection(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) {

@@ -18,7 +18,7 @@ var pochvenLayout = []struct {
 	home   bool
 	kspace bool // true = k-space entry point, not a Pochven system
 }{
-	{"Kino", 0, -680, true, true},
+	{"Kino", 0, -680, true, false},
 	{"Nalvula", 80, -560, false, false},
 	{"Otela", -80, -560, false, false},
 	{"Konola", 160, -440, false, false},

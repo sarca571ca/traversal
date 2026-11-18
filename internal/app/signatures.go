@@ -1,6 +1,17 @@
 package app
 
-import "traversal/internal/db"
+import (
+	"github.com/wailsapp/wails/v2/pkg/runtime"
+
+	"traversal/internal/db"
+)
+
+// notifyMap tells the map to reload (sigs can add or remove WH stubs).
+func (a *App) notifyMap() {
+	if a.ctx != nil {
+		runtime.EventsEmit(a.ctx, "map:update")
+	}
+}
 
 type SigEntry struct {
 	ID      int64  `json:"id"`
@@ -33,13 +44,18 @@ func (a *App) SaveSignature(systemID int32, sigID, sigType, notes string) error 
 		SigType:       db.SigType(sigType),
 		Notes:         notes,
 	})
+	a.notifyMap()
 	return err
 }
 
 func (a *App) DeleteSignature(id int64) error {
-	return a.store.DeleteSignature(id)
+	err := a.store.DeleteSignature(id)
+	a.notifyMap()
+	return err
 }
 
 func (a *App) ClearSignatures(systemID int32) error {
-	return a.store.DeleteSignaturesBySystem(systemID)
+	err := a.store.DeleteSignaturesBySystem(systemID)
+	a.notifyMap()
+	return err
 }

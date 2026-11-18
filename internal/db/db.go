@@ -102,6 +102,9 @@ func Open(path string) (*DB, error) {
 	sqlDB.Exec(`ALTER TABLE connections ADD COLUMN sig_id_b  TEXT NOT NULL DEFAULT ''`)
 	sqlDB.Exec(`ALTER TABLE connections ADD COLUMN ship_size TEXT NOT NULL DEFAULT ''`)
 	sqlDB.Exec(`ALTER TABLE connections ADD COLUMN expires_at INTEGER`)
+	// Map position of an unknown-destination WH stub, relative to its system.
+	sqlDB.Exec(`ALTER TABLE signatures ADD COLUMN stub_dx REAL`)
+	sqlDB.Exec(`ALTER TABLE signatures ADD COLUMN stub_dy REAL`)
 	return &DB{sql: sqlDB}, nil
 }
 

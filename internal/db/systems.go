@@ -106,7 +106,7 @@ func (db *DB) SetCharacterSystem(characterID int64, systemID int32) error {
 }
 
 func (db *DB) GetSystemByName(name string) (*System, error) {
-	row := db.sql.QueryRow(`SELECT id, name, security, x, y FROM systems WHERE name = ?`, name)
+	row := db.sql.QueryRow(`SELECT id, name, security, x, y FROM systems WHERE name = ? COLLATE NOCASE`, name)
 	return scanSystem(row)
 }
 

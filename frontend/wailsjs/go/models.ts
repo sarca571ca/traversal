@@ -1,5 +1,27 @@
 export namespace app {
 	
+	export class BookmarkImportResult {
+	    added: number;
+	    updated: number;
+	    systems: number;
+	    signatures: number;
+	    skipped: string[];
+	    warnings: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new BookmarkImportResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.added = source["added"];
+	        this.updated = source["updated"];
+	        this.systems = source["systems"];
+	        this.signatures = source["signatures"];
+	        this.skipped = source["skipped"];
+	        this.warnings = source["warnings"];
+	    }
+	}
 	export class Character {
 	    id: number;
 	    name: string;
@@ -28,6 +50,7 @@ export namespace app {
 	    massStatus: string;
 	    eol: boolean;
 	    expiresAt: number;
+	    conduit: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new MapConnection(source);
@@ -46,6 +69,35 @@ export namespace app {
 	        this.massStatus = source["massStatus"];
 	        this.eol = source["eol"];
 	        this.expiresAt = source["expiresAt"];
+	        this.conduit = source["conduit"];
+	    }
+	}
+	export class WHStub {
+	    id: number;
+	    systemId: number;
+	    sigId: string;
+	    dest: string;
+	    note: string;
+	    expiresAt: number;
+	    placed: boolean;
+	    dx: number;
+	    dy: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new WHStub(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.systemId = source["systemId"];
+	        this.sigId = source["sigId"];
+	        this.dest = source["dest"];
+	        this.note = source["note"];
+	        this.expiresAt = source["expiresAt"];
+	        this.placed = source["placed"];
+	        this.dx = source["dx"];
+	        this.dy = source["dy"];
 	    }
 	}
 	export class SystemNode {
@@ -73,6 +125,7 @@ export namespace app {
 	export class MapData {
 	    systems: SystemNode[];
 	    connections: MapConnection[];
+	    stubs: WHStub[];
 	
 	    static createFrom(source: any = {}) {
 	        return new MapData(source);
@@ -82,6 +135,7 @@ export namespace app {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.systems = this.convertValues(source["systems"], SystemNode);
 	        this.connections = this.convertValues(source["connections"], MapConnection);
+	        this.stubs = this.convertValues(source["stubs"], WHStub);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -184,6 +238,7 @@ export namespace app {
 	        this.notes = source["notes"];
 	    }
 	}
+	
 
 }
 

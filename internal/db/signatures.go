@@ -129,6 +129,67 @@ func (db *DB) DeleteSignature(id int64) error {
 	return err
 }
 
+// DeleteExpiredSignatures removes signatures whose expiry has passed.
+// Only bookmark imports set an expiry, so hand-entered sigs are untouched.
+func (db *DB) DeleteExpiredSignatures() (int64, error) {
+	res, err := db.sql.Exec(`DELETE FROM signatures WHERE expires_at IS NOT NULL AND expires_at <= ?`, time.Now().Unix())
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}
+
+// SetStubOffset saves where a WH stub's end sits, relative to its system.
+func (db *DB) SetStubOffset(id int64, dx, dy float64) error {
+	_, err := db.sql.Exec(`UPDATE signatures SET stub_dx=?, stub_dy=? WHERE id=?`, dx, dy, id)
+	return err
+}
+
+// StubOffsets returns saved stub offsets keyed by signature row ID.
+func (db *DB) StubOffsets() (map[int64][2]float64, error) {
+	rows, err := db.sql.Query(`SELECT id, stub_dx, stub_dy FROM signatures WHERE stub_dx IS NOT NULL AND stub_dy IS NOT NULL`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[int64][2]float64{}
+	for rows.Next() {
+		var id int64
+		var dx, dy float64
+		if err := rows.Scan(&id, &dx, &dy); err != nil {
+			return nil, err
+		}
+		out[id] = [2]float64{dx, dy}
+	}
+	return out, rows.Err()
+}
+
+// ListUnresolvedWormholes returns live wormhole sigs with no known
+// destination system whose notes start with "→" (the stub convention).
+func (db *DB) ListUnresolvedWormholes() ([]Signature, error) {
+	rows, err := db.sql.Query(`
+		SELECT id, solar_system_id, sig_id, sig_type, wormhole_type, leads_to_system, leads_to_sig,
+			mass_status, eol, expires_at, notes, created_at, updated_at
+		FROM signatures
+		WHERE LOWER(sig_type) = 'wormhole' AND leads_to_system IS NULL
+		  AND notes LIKE '→%'
+		  AND (expires_at IS NULL OR expires_at > ?)
+		ORDER BY solar_system_id, sig_id`, time.Now().Unix())
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var sigs []Signature
+	for rows.Next() {
+		s, err := scanSignature(rows)
+		if err != nil {
+			return nil, err
+		}
+		sigs = append(sigs, *s)
+	}
+	return sigs, rows.Err()
+}
+
 func (db *DB) DeleteSignaturesBySystem(solarSystemID int32) error {
 	_, err := db.sql.Exec(`DELETE FROM signatures WHERE solar_system_id = ?`, solarSystemID)
 	return err

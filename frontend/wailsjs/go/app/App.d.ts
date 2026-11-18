@@ -28,6 +28,8 @@ export function GetSystemStatics(arg1:number):Promise<Array<string>>;
 
 export function GetViewport():Promise<app.MapViewport>;
 
+export function ImportBookmarks(arg1:string):Promise<app.BookmarkImportResult>;
+
 export function PlanRoute(arg1:string,arg2:string,arg3:string,arg4:boolean):Promise<app.RouteResult>;
 
 export function RemoveCharacter(arg1:number):Promise<void>;
@@ -37,6 +39,8 @@ export function SaveSignature(arg1:number,arg2:string,arg3:string,arg4:string):P
 export function SaveViewport(arg1:number,arg2:number,arg3:number):Promise<void>;
 
 export function SeedPochven():Promise<void>;
+
+export function SetStubPosition(arg1:number,arg2:number,arg3:number):Promise<void>;
 
 export function UpdateConnection(arg1:number,arg2:string,arg3:string,arg4:string,arg5:string,arg6:string,arg7:string,arg8:boolean,arg9:number):Promise<void>;
 
